@@ -1638,99 +1638,119 @@ action:
                         continue_on_timeout: true
                         timeout:
                           seconds: 30
-                      - if: '{{ is_state(input_run_during_backup, "idle") }}'
-                        then:  # Sensor never left idle and no new backup timestamp was detected
-                          - if: '{{ has_backup_timestamp_entity }}'
-                            then:  # Timestamp sensor available, so this is a genuine failure
-                              - variables:
-                                  log_message: >
-                                    ERROR: No backup was detected within 30 seconds and the
-                                    "Last successful automatic backup" sensor did not change.
-                                    Stopping to avoid running updates without a backup.
-                              - *logbook_update
+
+                      # A fast backup can start and finish within the wait above, leaving the
+                      # sensor back at "idle", so the timestamp is read again before failing.
+                      - alias: "Check the backup timestamp again after the wait"
+                        variables:
+                          backup_timestamp_after_wait: >
+                            {{ states(input_last_backup_timestamp_entity) if has_backup_timestamp_entity else "" }}
+                          is_backup_confirmed_after_wait: >
+                            {{
+                              has_backup_timestamp_entity and
+                              backup_timestamp_after_wait not in ["unknown", "unavailable", ""] and
+                              backup_timestamp_after_wait != backup_timestamp_before
+                            }}
+                      - if: '{{ is_backup_confirmed_after_wait }}'
+                        then:  # Backup finished during the wait
+                          - *backup_completed
+                        else:
+                          - if: '{{ is_state(input_run_during_backup, "idle") }}'
+                            then:  # Sensor never left idle and no new backup timestamp was detected
+                              - if: '{{ has_backup_timestamp_entity }}'
+                                then:  # Timestamp sensor available, so this is a genuine failure
+                                  - variables:
+                                      log_message: >
+                                        ERROR: No backup was detected within 30 seconds and the
+                                        "Last successful automatic backup" sensor did not change.
+                                        Stopping to avoid running updates without a backup.
+                                  - *logbook_update
+                                  - if: >-
+                                      {{
+                                        "backup" in input_notification_select_notifications or
+                                        "errors" in input_notification_select_notifications
+                                      }}
+                                    then:
+                                      - *send_notification
+                                  - alias: "Run custom error actions (backup may not have started)"
+                                    continue_on_error: true
+                                    sequence: !input notification_action_errors
+                                  - *reset_helper_flag
+                                  - stop: "Backup did not start"
+                                else:  # Without the timestamp sensor the backup cannot be confirmed
+                                  - variables:
+                                      log_message: >
+                                        WARNING: The backup state sensor is still idle.
+                                        The backup has probably completed during the service call,
+                                        but this cannot be confirmed without the
+                                        "Last successful automatic backup" sensor. Continuing with updates...
+                                  - *logbook_update
+                                  - if: >-
+                                      {{
+                                        "backup" in input_notification_select_notifications or
+                                        "errors" in input_notification_select_notifications
+                                      }}
+                                    then:
+                                      - *send_notification
+                                  - alias: "Run custom error actions (backup could not be confirmed)"
+                                    continue_on_error: true
+                                    sequence: !input notification_action_errors
+                            else:  # Backup is still running
                               - if: >-
                                   {{
-                                    "backup" in input_notification_select_notifications or
-                                    "errors" in input_notification_select_notifications
+                                    is_state(input_run_during_backup, "unknown") or
+                                    is_state(input_run_during_backup, "unavailable")
                                   }}
                                 then:
-                                  - *send_notification
-                              - alias: "Run custom error actions (backup may not have started)"
-                                continue_on_error: true
-                                sequence: !input notification_action_errors
-                              - *reset_helper_flag
-                              - stop: "Backup did not start"
-                            else:  # Without the timestamp sensor the backup cannot be confirmed
+                                  - variables:
+                                      log_message: >
+                                        ERROR: Backup state sensor changed to {{ states(input_run_during_backup) }}
+                                        instead of a backup state. Stopping.
+                                  - *logbook_update
+                                  - if: >-
+                                      {{
+                                        "backup" in input_notification_select_notifications or
+                                        "errors" in input_notification_select_notifications
+                                      }}
+                                    then:
+                                      - *send_notification
+                                  - alias: "Run custom error actions (backup sensor fault)"
+                                    continue_on_error: true
+                                    sequence: !input notification_action_errors
+                                  - *reset_helper_flag
+                                  - stop: "Backup state sensor became unavailable"
                               - variables:
                                   log_message: >
-                                    WARNING: The backup state sensor is still idle.
-                                    The backup has probably completed during the service call,
-                                    but this cannot be confirmed without the
-                                    "Last successful automatic backup" sensor. Continuing with updates...
+                                    Backup started ({{ states(input_run_during_backup) }}).
+                                    Waiting for backup system to return to idle...
                               - *logbook_update
-                              - if: >-
-                                  {{
-                                    "backup" in input_notification_select_notifications or
-                                    "errors" in input_notification_select_notifications
-                                  }}
+                              - alias: "Wait for backup system to become idle after backup"
+                                wait_for_trigger:
+                                  - trigger: state
+                                    entity_id: !input run_during_backup
+                                    to: "idle"
+                                continue_on_timeout: true
+                                timeout:
+                                  minutes: "{{ input_backup_timeout | int(60) }}"
+                              - if: '{{ not is_state(input_run_during_backup, "idle") }}'
                                 then:
-                                  - *send_notification
-                        else:  # Backup is still running
-                          - if: >-
-                              {{
-                                is_state(input_run_during_backup, "unknown") or
-                                is_state(input_run_during_backup, "unavailable")
-                              }}
-                            then:
-                              - variables:
-                                  log_message: >
-                                    ERROR: Backup state sensor changed to {{ states(input_run_during_backup) }}
-                                    instead of a backup state. Stopping.
-                              - *logbook_update
-                              - if: >-
-                                  {{
-                                    "backup" in input_notification_select_notifications or
-                                    "errors" in input_notification_select_notifications
-                                  }}
-                                then:
-                                  - *send_notification
-                              - alias: "Run custom error actions (backup sensor fault)"
-                                continue_on_error: true
-                                sequence: !input notification_action_errors
-                              - *reset_helper_flag
-                              - stop: "Backup state sensor became unavailable"
-                          - variables:
-                              log_message: >
-                                Backup started ({{ states(input_run_during_backup) }}).
-                                Waiting for backup system to return to idle...
-                          - *logbook_update
-                          - alias: "Wait for backup system to become idle after backup"
-                            wait_for_trigger:
-                              - trigger: state
-                                entity_id: !input run_during_backup
-                                to: "idle"
-                            continue_on_timeout: true
-                            timeout:
-                              minutes: "{{ input_backup_timeout | int(60) }}"
-                          - if: '{{ not is_state(input_run_during_backup, "idle") }}'
-                            then:
-                              - variables:
-                                  log_message: >
-                                    WARNING: Backup did not complete within {{ input_backup_timeout }} minutes.
-                                    Continuing with updates...
-                              - *logbook_update
-                              - if: >-
-                                  {{
-                                    "backup" in input_notification_select_notifications or
-                                    "errors" in input_notification_select_notifications
-                                  }}
-                                then:
-                                  - *send_notification
-                              - alias: "Run custom error actions (backup timeout)"
-                                continue_on_error: true
-                                sequence: !input notification_action_errors
-                            else:
-                              - *backup_completed
+                                  - variables:
+                                      log_message: >
+                                        WARNING: Backup did not complete within {{ input_backup_timeout }} minutes.
+                                        Continuing with updates...
+                                  - *logbook_update
+                                  - if: >-
+                                      {{
+                                        "backup" in input_notification_select_notifications or
+                                        "errors" in input_notification_select_notifications
+                                      }}
+                                    then:
+                                      - *send_notification
+                                  - alias: "Run custom error actions (backup timeout)"
+                                    continue_on_error: true
+                                    sequence: !input notification_action_errors
+                                else:
+                                  - *backup_completed
                     else:  # No backup state sensor configured
                       - variables:
                           log_message: >
