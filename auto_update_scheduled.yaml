@@ -373,6 +373,11 @@ blueprint:
 
             **Required** when backup mode is set to "When no recent backup is detected".
 
+            **Strongly recommended** together with the "Last successful automatic backup sensor" below:
+            that sensor is what allows the automation to confirm that a new backup was really created.
+            Without it, a backup that finishes while the backup action is still running cannot be
+            confirmed, and the automation continues with the updates after logging a warning.
+
             This sensor is provided by the [Backup integration](https://www.home-assistant.io/integrations/backup/)
             and is typically named `sensor.backup_backup_manager_state`.
 
@@ -395,6 +400,14 @@ blueprint:
             Home Assistant Backup integration.
 
             **Required** when backup mode is set to "When no recent backup is detected".
+
+            This sensor is also how the automation confirms that a new backup was created:
+            its value is read before and after the backup action, and a newer timestamp
+            confirms the backup, no matter how long the backup took.
+
+            If this sensor is not selected, the backup cannot be confirmed. In that case the
+            automation logs a warning and continues with the updates, so the updates may run
+            without a verified backup.
 
             This sensor is provided by the [Backup integration](https://www.home-assistant.io/integrations/backup/)
             and is typically named `sensor.backup_last_successful_automatic_backup`.
