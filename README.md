@@ -3,6 +3,10 @@
 ## What is this?
 A Home Assistant blueprint to assist keeping the system automatically updated with the latest version of it's multiple components.
 
+> This is a fork of [edwardtfn/ha_auto_update_scheduled](https://github.com/edwardtfn/ha_auto_update_scheduled),
+> adding the [Exclude integrations](#exclude-integrations-optional) option.
+> The blueprint imports from this repository, so re-importing it in Home Assistant keeps that option.
+
 I’ve created a new version of my previous [Auto-update Home Assistant blueprint](https://community.home-assistant.io/t/auto-update-home-assistant/429015) , but now based in the new [schedule helpers](https://www.home-assistant.io/blog/2022/09/07/release-20229/#new-helper-weekly-schedule) and other improvements. I’m using this blueprint myself.
 
 I understand Home Assistant wasn't considered a stable system for years, 
@@ -36,7 +40,7 @@ If one of the updates forces HA to reboot, the automation will restart after the
 ### Import blueprint tools in Home Assistant (easier)
 Just click in the following button and follow it's steps:
 
-[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fedwardtfn%2Fha_auto_update_scheduled%2Fmain%2Fauto_update_scheduled.yaml)
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fraw.githubusercontent.com%2Fpotat0man%2Fha_auto_update_scheduled%2Fmain%2Fauto_update_scheduled.yaml)
 
 ### Manual
 1. Open Home Assistant interface
@@ -81,6 +85,31 @@ Usually a new major version of Home Assistant is available on the begining of ev
  ### Exclusions <sup>*Optional</sup>
 Select the items that should NOT be included on the automated updates.
 * Use this if you want to keep some add-on on an specific version and avoid auto-updates to it.
+
+### Exclude integrations <sup>*Optional</sup>
+
+Type the name of one or more integrations whose updates should NOT be installed automatically, pressing `Enter` after each name to add it to the list.
+
+Every update entity provided by a listed integration is skipped, including entities added later on,
+so there is no need to keep the **Exclusions** list above in sync when new devices or repositories show up.
+
+Each entry is matched, ignoring upper/lower case, against:
+
+- the integration domain, as used in its documentation URL (`esphome`, `hacs`, `shelly`, `zwave_js`, `hassio`, ...);
+- the title of a configuration entry, as shown under [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/),
+  which is handy when the same integration is set up more than once and only one of those entries should be excluded.
+
+Examples:
+
+- `esphome` - never auto-update any ESPHome device;
+- `hacs` - never auto-update anything installed through HACS;
+- `Living room lights` - never auto-update the devices of that single configuration entry.
+
+Notes:
+
+- `hassio` covers Home Assistant Core, OS and Supervisor as well as every add-on. To skip only Core/OS/Supervisor updates, use the **Update mode for Home Assistant core and OS updates** option instead.
+- Names not matching any integration are silently ignored.
+- Exclusions are also applied to the **Out of schedule entities**.
       
 ### Pre-update actions <sup>*Optional</sup>
 Actions to execute before the backup or any update starts.
@@ -103,4 +132,4 @@ You can use this to hold your updates when you have a party at home, or when you
 ![image](https://user-images.githubusercontent.com/94725493/193578971-5981aa3b-06bc-4ceb-ae2a-f3149d8ad350.png)
 
 ### Changes log
-Please take a look on the [log of commits](https://github.com/edwardtfn/ha_auto_update_scheduled/commits/main).
+Please take a look on the [log of commits](https://github.com/potat0man/ha_auto_update_scheduled/commits/main).

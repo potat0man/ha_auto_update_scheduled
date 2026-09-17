@@ -1,6 +1,7 @@
 ####################################################################################################
 #####                        Home Assistant Auto-update on Schedule                            #####
-#####             Repository: https://github.com/edwardtfn/ha_auto_update_scheduled            #####
+#####             Repository: https://github.com/potat0man/ha_auto_update_scheduled            #####
+#####               Upstream: https://github.com/edwardtfn/ha_auto_update_scheduled            #####
 ####################################################################################################
 ##### Purpose: YAML blueprint to automatically update Home Assistant and its components when   #####
 #####          updates are available, following a schedule and with configurable options.      #####
@@ -18,11 +19,11 @@
 ##### - For discussions:                                                                       #####
 #####     https://community.home-assistant.io/t/459281                                         #####
 ##### - For support, bug reports and new ideas:                                                #####
-#####     https://github.com/edwardtfn/ha_auto_update_scheduled/issues                         #####
+#####     https://github.com/potat0man/ha_auto_update_scheduled/issues                         #####
 ####################################################################################################
 ---
 blueprint:
-  name: Home Assistant Auto-update on a schedule base v2026.6.0
+  name: Home Assistant Auto-update on a schedule base v2026.7.0
   author: Edward Firmo (https://github.com/edwardtfn)
   homeassistant:
     min_version: 2025.8.0
@@ -31,7 +32,10 @@ blueprint:
 
     Update Home Assistant automatically when a new update is available.
 
-    ## v2026.6.0
+    ## v2026.7.0
+
+    - New **Excluded integrations** option, under *What*: skip every update provided by
+      one or more integrations, without having to list each update entity individually.
 
     ## Attention:
 
@@ -49,9 +53,9 @@ blueprint:
       - [Home Assistant Community portal](https://community.home-assistant.io/t/459281)
 
     ## For support, bug reports and new ideas:
-      - [GitHub Issues](https://github.com/edwardtfn/ha_auto_update_scheduled/issues)
+      - [GitHub Issues](https://github.com/potat0man/ha_auto_update_scheduled/issues)
   domain: automation
-  source_url: https://raw.githubusercontent.com/edwardtfn/ha_auto_update_scheduled/main/auto_update_scheduled.yaml
+  source_url: https://raw.githubusercontent.com/potat0man/ha_auto_update_scheduled/main/auto_update_scheduled.yaml
   input:
     when_section:
       name: When (Schedule, etc.)
@@ -278,6 +282,42 @@ blueprint:
             entity:
               multiple: true
               domain: update
+
+        update_exclusion_integrations:
+          name: Excluded integrations
+          description: |
+            `Optional`
+
+            Type the name of one or more integrations whose updates should NOT be installed
+            automatically, pressing `Enter` after each name to add it to the list.
+
+            Every update entity provided by a listed integration is skipped, including entities
+            added later on, so there is no need to keep the "Exclusions" list above in sync when
+            new devices or repositories show up.
+
+            Each entry is matched, ignoring upper/lower case, against:
+
+            - the integration domain, as used in its documentation URL
+              (`esphome`, `hacs`, `shelly`, `zwave_js`, `hassio`, ...);
+
+            - the title of a configuration entry, as shown under
+              [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/),
+              which is handy when the same integration is set up more than once and only one of
+              those entries should be excluded.
+
+            Notes:
+
+            - `hassio` covers Home Assistant Core, OS and Supervisor as well as every add-on.
+              To skip only Core/OS/Supervisor updates, use "Update mode for Home Assistant core
+              and OS updates" above instead.
+
+            - Names not matching any integration are silently ignored.
+
+            - Exclusions are also applied to the "Out of schedule entities" selected above.
+          default: []
+          selector:
+            text:
+              multiple: true
 
         minimum_patch_version:
           name: Minimum patch version
@@ -873,6 +913,7 @@ condition:
                 | selectattr("entity_id", "in", installable_entities)
                 | selectattr("entity_id", "in", update_out_of_schedule)
                 | rejectattr("entity_id", "in", input_update_exclusions)
+                | rejectattr("entity_id", "in", integration_excluded_entities)
                 | list | count | int(0) > 0
               }}
       - condition: and
@@ -888,6 +929,7 @@ condition:
                 | selectattr("state", "eq", "on")
                 | selectattr("entity_id", "in", installable_entities)
                 | rejectattr("entity_id", "in", input_update_exclusions)
+                | rejectattr("entity_id", "in", integration_excluded_entities)
                 | list | count | int(0) > 0
               }}
       - condition: and
@@ -927,6 +969,7 @@ variables:
     {% endfor %}
     {{ ns.list }}
   temp_input_update_exclusions: !input update_exclusions
+  temp_input_update_exclusion_integrations: !input update_exclusion_integrations
   input_verbose_logging_bool: !input verbose_logging_bool
   input_core_os_update_mode: !input core_os_update_mode
   input_firmware_update_mode: !input firmware_update_mode
@@ -968,6 +1011,7 @@ variables:
           | selectattr("entity_id", "in", installable_entities)
           | selectattr("entity_id", "in", update_out_of_schedule)
           | rejectattr("entity_id", "in", input_update_exclusions)
+          | rejectattr("entity_id", "in", integration_excluded_entities)
           | list | count | int(0) > 0
         )
       )
@@ -999,6 +1043,28 @@ variables:
       {% endif %}
     {% endfor %}
     {{ ns.list }}
+  integration_excluded_entities: >
+    {% set raw_names = temp_input_update_exclusion_integrations | default([], true) %}
+    {% set raw_names = [raw_names] if raw_names is string else raw_names %}
+    {% set raw_names = raw_names | map('string') | map('trim') | reject('eq', '') | unique | list %}
+    {% set lower_names = raw_names | map('lower') | unique | list %}
+    {% set ns = namespace(list=[]) %}
+    {% for name in (raw_names + lower_names) | unique %}
+      {% set ns.list = ns.list + (integration_entities(name) | select('search', '^update[.]') | list) %}
+    {% endfor %}
+    {% if lower_names | count > 0 %}
+      {% for entity in states.update | default([]) %}
+        {% set entry_id = config_entry_id(entity.entity_id) %}
+        {% if entry_id is string and entry_id | length > 0 %}
+          {% set entry_domain = config_entry_attr(entry_id, 'domain') | default('', true) | string | lower %}
+          {% set entry_title = config_entry_attr(entry_id, 'title') | default('', true) | string | lower %}
+          {% if entry_domain in lower_names or entry_title in lower_names %}
+            {% set ns.list = ns.list + [entity.entity_id] %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    {% endif %}
+    {{ ns.list | unique | list }}
 action:
   - alias: Refresh update entities
     action: homeassistant.update_entity
@@ -1008,6 +1074,7 @@ action:
           states.update
           | default([])
           | rejectattr('entity_id', 'in', input_update_exclusions)
+          | rejectattr('entity_id', 'in', integration_excluded_entities)
           | map(attribute='entity_id')
           | list
         }}
@@ -1112,7 +1179,9 @@ action:
           }}
         {% endif %}
       input_update_exclusions: >
-            {% set exclusions = (temp_input_update_exclusions | default([])) + non_installable_entities %}
+            {% set exclusions = (temp_input_update_exclusions | default([]))
+                                + non_installable_entities
+                                + integration_excluded_entities %}
 
             {% set core_os_entities = [core_update_entity | default(""),
                                        os_update_entity | default(""),
