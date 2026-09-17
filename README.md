@@ -94,6 +94,9 @@ Every update entity provided by a selected integration is skipped, including ent
 so there is no need to keep the **Exclusions** list above in sync when new devices or repositories show up.
 
 The dropdown lists every integration shipping with Home Assistant that can provide updates, plus HACS.
+Each one is marked with the kind of integration it is: 🔌 a device, 🌐 a hub or bridge covering several devices,
+☁️ a service, 🖥️ Home Assistant hardware, ⚙️ a system component, 🧩 a helper and 📦 HACS.
+
 Anything else can still be typed in and added to the list:
 
 - the domain of a custom integration, as used in its documentation URL;
