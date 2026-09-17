@@ -23,7 +23,7 @@
 ####################################################################################################
 ---
 blueprint:
-  name: Home Assistant Auto-update on a schedule base v2026.8.0
+  name: Home Assistant Auto-update on a schedule base v2026.9.0
   author: Edward Firmo (https://github.com/edwardtfn)
   homeassistant:
     min_version: 2025.8.0
@@ -31,6 +31,12 @@ blueprint:
     # Home Assistant Auto-update
 
     Update Home Assistant automatically when a new update is available.
+
+    ## v2026.9.0
+
+    - **Excluded integrations** now excludes the whole integration again: picking any one of its
+      entries is enough, and every update it provides is skipped. Entries already picked on
+      v2026.8.0 keep working and now cover their whole integration.
 
     ## v2026.8.0
 
@@ -298,28 +304,26 @@ blueprint:
 
             Pick the integrations whose updates should NOT be installed automatically.
 
-            The picker lists the integrations currently set up on this system, exactly as they
-            appear under
+            The picker lists the integrations set up on this system, as they appear under
             [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/).
-            Use "Add" once per integration to exclude.
 
-            Every update entity belonging to a picked entry is skipped, including entities added
-            later on, so there is no need to keep the "Exclusions" list above in sync when new
-            updates show up for it.
+            **One pick excludes the whole integration.** Integrations that add one entry per device
+            or per service (ESPHome, Shelly, Matter, ...) are listed once per entry: picking any
+            single one of them excludes every update that integration provides, so there is no need
+            to add the others.
+
+            Every update entity provided by a picked integration is skipped, including entities
+            added later on, so there is no need to keep the "Exclusions" list above in sync when
+            new devices or repositories show up.
 
             Notes:
 
-            - Integrations set up once (HACS, Home Assistant Supervisor, ...) cover everything they
-              provide with a single entry. "Home Assistant Supervisor" covers Home Assistant Core,
-              OS and Supervisor as well as every add-on; to skip only Core/OS/Supervisor updates,
-              use "Update mode for Home Assistant core and OS updates" above instead.
+            - "Home Assistant Supervisor" covers Home Assistant Core, OS and Supervisor as well as
+              every add-on. To skip only Core/OS/Supervisor updates, use "Update mode for Home
+              Assistant core and OS updates" above instead.
 
-            - Integrations that add one entry per device or per service (ESPHome, Shelly, Matter,
-              ...) need one entry picked per device. Use the "Exclusions" list above when it is
-              easier to select the update entities directly.
-
-            - Update entities that do not belong to any configuration entry, such as the ones
-              created from YAML, cannot be picked here. Use the "Exclusions" list above for those.
+            - The pick is resolved to its integration every time the automation runs. If the entry
+              that was picked is later removed, pick any other entry of the same integration.
 
             - Exclusions are also applied to the "Out of schedule entities" selected above.
           default: []
@@ -328,7 +332,7 @@ blueprint:
               multiple: true
               fields:
                 config_entry:
-                  label: Integration
+                  label: Any entry of the integration to exclude
                   required: true
                   selector:
                     config_entry: {}
@@ -1060,17 +1064,27 @@ variables:
   integration_excluded_entities: >
     {% set rows = temp_input_update_exclusion_integrations | default([], true) %}
     {% set rows = [rows] if rows is mapping else rows %}
-    {% set ns = namespace(entries=[], list=[]) %}
+    {% set ns = namespace(domains=[], list=[]) %}
     {% for row in rows if row is mapping %}
       {% set entry_id = row.get('config_entry') %}
       {% if entry_id is string and entry_id | length > 0 %}
-        {% set ns.entries = ns.entries + [entry_id] %}
+        {% set entry_domain = config_entry_attr(entry_id, 'domain') | default('', true) %}
+        {% if entry_domain is string and entry_domain | length > 0 %}
+          {% set ns.domains = ns.domains + [entry_domain] %}
+        {% endif %}
       {% endif %}
     {% endfor %}
-    {% if ns.entries | count > 0 %}
+    {% set ns.domains = ns.domains | unique | list %}
+    {% if ns.domains | count > 0 %}
+      {% for domain in ns.domains %}
+        {% set ns.list = ns.list + (integration_entities(domain) | select('search', '^update[.]') | list) %}
+      {% endfor %}
       {% for entity in states.update | default([]) %}
-        {% if config_entry_id(entity.entity_id) in ns.entries %}
-          {% set ns.list = ns.list + [entity.entity_id] %}
+        {% set entry_id = config_entry_id(entity.entity_id) %}
+        {% if entry_id is string and entry_id | length > 0 %}
+          {% if (config_entry_attr(entry_id, 'domain') | default('', true)) in ns.domains %}
+            {% set ns.list = ns.list + [entity.entity_id] %}
+          {% endif %}
         {% endif %}
       {% endfor %}
     {% endif %}
