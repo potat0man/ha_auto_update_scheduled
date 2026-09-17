@@ -23,7 +23,7 @@
 ####################################################################################################
 ---
 blueprint:
-  name: Home Assistant Auto-update on a schedule base v2026.9.0
+  name: Home Assistant Auto-update on a schedule base v2026.10.0
   author: Edward Firmo (https://github.com/edwardtfn)
   homeassistant:
     min_version: 2025.8.0
@@ -31,6 +31,14 @@ blueprint:
     # Home Assistant Auto-update
 
     Update Home Assistant automatically when a new update is available.
+
+    ## v2026.10.0
+
+    - **Excluded integrations** lists one entry per integration again, named after the integration,
+      instead of one entry per device or service.
+
+    - **Breaking:** the option stores integration names again rather than configuration entries.
+      If it was configured on v2026.8.0 or v2026.9.0, select the integrations again.
 
     ## v2026.9.0
 
@@ -302,40 +310,154 @@ blueprint:
           description: |
             `Optional`
 
-            Pick the integrations whose updates should NOT be installed automatically.
+            Pick one or more integrations whose updates should NOT be installed automatically.
 
-            The picker lists the integrations set up on this system, as they appear under
-            [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/).
-
-            **One pick excludes the whole integration.** Integrations that add one entry per device
-            or per service (ESPHome, Shelly, Matter, ...) are listed once per entry: picking any
-            single one of them excludes every update that integration provides, so there is no need
-            to add the others.
-
-            Every update entity provided by a picked integration is skipped, including entities
+            Every update entity provided by a selected integration is skipped, including entities
             added later on, so there is no need to keep the "Exclusions" list above in sync when
             new devices or repositories show up.
 
+            The list offers every integration shipping with Home Assistant that can provide
+            updates, plus HACS. Anything else can still be typed in and added to the list:
+
+            - the domain of a custom integration, as used in its documentation URL;
+
+            - the title of a configuration entry, as shown under
+              [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/),
+              which is handy when the same integration is set up more than once and only one of
+              those entries should be excluded.
+
             Notes:
+
+            - Typed entries are matched ignoring upper/lower case.
 
             - "Home Assistant Supervisor" covers Home Assistant Core, OS and Supervisor as well as
               every add-on. To skip only Core/OS/Supervisor updates, use "Update mode for Home
               Assistant core and OS updates" above instead.
 
-            - The pick is resolved to its integration every time the automation runs. If the entry
-              that was picked is later removed, pick any other entry of the same integration.
+            - Entries not matching any integration are silently ignored.
 
             - Exclusions are also applied to the "Out of schedule entities" selected above.
           default: []
           selector:
-            object:
+            select:
               multiple: true
-              fields:
-                config_entry:
-                  label: Any entry of the integration to exclude
-                  required: true
-                  selector:
-                    config_entry: {}
+              custom_value: true
+              mode: dropdown
+              options:
+                - label: "AdGuard Home"
+                  value: "adguard"
+                - label: "Advantage Air"
+                  value: "advantage_air"
+                - label: "AirGradient"
+                  value: "airgradient"
+                - label: "BleBox devices"
+                  value: "blebox"
+                - label: "devolo Home Network"
+                  value: "devolo_home_network"
+                - label: "ESPHome"
+                  value: "esphome"
+                - label: "EZVIZ"
+                  value: "ezviz"
+                - label: "FRITZ!Box Tools"
+                  value: "fritz"
+                - label: "HACS (Home Assistant Community Store)"
+                  value: "hacs"
+                - label: "Home Assistant Connect ZBT-1"
+                  value: "homeassistant_sky_connect"
+                - label: "Home Assistant Connect ZBT-2"
+                  value: "homeassistant_connect_zbt2"
+                - label: "Home Assistant Hardware"
+                  value: "homeassistant_hardware"
+                - label: "Home Assistant Supervisor"
+                  value: "hassio"
+                - label: "Home Assistant Yellow"
+                  value: "homeassistant_yellow"
+                - label: "Immich"
+                  value: "immich"
+                - label: "IronOS"
+                  value: "iron_os"
+                - label: "La Marzocco"
+                  value: "lamarzocco"
+                - label: "LaMetric"
+                  value: "lametric"
+                - label: "Linn / OpenHome"
+                  value: "openhome"
+                - label: "Matter"
+                  value: "matter"
+                - label: "MikroTik"
+                  value: "mikrotik"
+                - label: "MQTT"
+                  value: "mqtt"
+                - label: "myUplink"
+                  value: "myuplink"
+                - label: "NETGEAR"
+                  value: "netgear"
+                - label: "Nextcloud"
+                  value: "nextcloud"
+                - label: "ntfy"
+                  value: "ntfy"
+                - label: "Paperless-ngx"
+                  value: "paperless_ngx"
+                - label: "Peblar"
+                  value: "peblar"
+                - label: "Pi-hole"
+                  value: "pi_hole"
+                - label: "Plex Media Server"
+                  value: "plex"
+                - label: "Portainer"
+                  value: "portainer"
+                - label: "QNAP QSW"
+                  value: "qnap_qsw"
+                - label: "RainMachine"
+                  value: "rainmachine"
+                - label: "Raspberry Pi"
+                  value: "raspberry_pi"
+                - label: "Reolink"
+                  value: "reolink"
+                - label: "Sensibo"
+                  value: "sensibo"
+                - label: "Shelly"
+                  value: "shelly"
+                - label: "SmartThings"
+                  value: "smartthings"
+                - label: "SMLIGHT SLZB"
+                  value: "smlight"
+                - label: "Squeezebox (Lyrion Music Server)"
+                  value: "squeezebox"
+                - label: "Swing2Sleep Smarla"
+                  value: "smarla"
+                - label: "Synology DSM"
+                  value: "synology_dsm"
+                - label: "System Bridge"
+                  value: "system_bridge"
+                - label: "Template"
+                  value: "template"
+                - label: "Tesla Fleet"
+                  value: "tesla_fleet"
+                - label: "Teslemetry"
+                  value: "teslemetry"
+                - label: "Tessie"
+                  value: "tessie"
+                - label: "TP-Link Omada"
+                  value: "tplink_omada"
+                - label: "Ubiquiti airOS"
+                  value: "airos"
+                - label: "UniFi Network"
+                  value: "unifi"
+                - label: "Uptime Kuma"
+                  value: "uptime_kuma"
+                - label: "VeSync"
+                  value: "vesync"
+                - label: "WattWächter Plus"
+                  value: "wattwaechter"
+                - label: "Whisker"
+                  value: "litterrobot"
+                - label: "WLED"
+                  value: "wled"
+                - label: "Z-Wave"
+                  value: "zwave_js"
+                - label: "Zigbee Home Automation"
+                  value: "zha"
 
         minimum_patch_version:
           name: Minimum patch version
@@ -1062,27 +1184,21 @@ variables:
     {% endfor %}
     {{ ns.list }}
   integration_excluded_entities: >
-    {% set rows = temp_input_update_exclusion_integrations | default([], true) %}
-    {% set rows = [rows] if rows is mapping else rows %}
-    {% set ns = namespace(domains=[], list=[]) %}
-    {% for row in rows if row is mapping %}
-      {% set entry_id = row.get('config_entry') %}
-      {% if entry_id is string and entry_id | length > 0 %}
-        {% set entry_domain = config_entry_attr(entry_id, 'domain') | default('', true) %}
-        {% if entry_domain is string and entry_domain | length > 0 %}
-          {% set ns.domains = ns.domains + [entry_domain] %}
-        {% endif %}
-      {% endif %}
+    {% set raw_names = temp_input_update_exclusion_integrations | default([], true) %}
+    {% set raw_names = [raw_names] if raw_names is string else raw_names %}
+    {% set raw_names = raw_names | map('string') | map('trim') | reject('eq', '') | unique | list %}
+    {% set lower_names = raw_names | map('lower') | unique | list %}
+    {% set ns = namespace(list=[]) %}
+    {% for name in (raw_names + lower_names) | unique %}
+      {% set ns.list = ns.list + (integration_entities(name) | select('search', '^update[.]') | list) %}
     {% endfor %}
-    {% set ns.domains = ns.domains | unique | list %}
-    {% if ns.domains | count > 0 %}
-      {% for domain in ns.domains %}
-        {% set ns.list = ns.list + (integration_entities(domain) | select('search', '^update[.]') | list) %}
-      {% endfor %}
+    {% if lower_names | count > 0 %}
       {% for entity in states.update | default([]) %}
         {% set entry_id = config_entry_id(entity.entity_id) %}
         {% if entry_id is string and entry_id | length > 0 %}
-          {% if (config_entry_attr(entry_id, 'domain') | default('', true)) in ns.domains %}
+          {% set entry_domain = config_entry_attr(entry_id, 'domain') | default('', true) | string | lower %}
+          {% set entry_title = config_entry_attr(entry_id, 'title') | default('', true) | string | lower %}
+          {% if entry_domain in lower_names or entry_title in lower_names %}
             {% set ns.list = ns.list + [entity.entity_id] %}
           {% endif %}
         {% endif %}
