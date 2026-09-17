@@ -88,32 +88,25 @@ Select the items that should NOT be included on the automated updates.
 
 ### Exclude integrations <sup>*Optional</sup>
 
-Pick one or more integrations from the dropdown whose updates should NOT be installed automatically.
+Pick the integrations whose updates should NOT be installed automatically.
 
-Every update entity provided by a selected integration is skipped, including entities added later on,
-so there is no need to keep the **Exclusions** list above in sync when new devices or repositories show up.
+The picker lists the integrations currently set up on this system, with their logos, exactly as they appear under
+[Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/). Use **Add** once per integration to exclude.
 
-The dropdown lists every integration shipping with Home Assistant that can provide updates, plus HACS.
-Anything else can still be typed in and added to the list:
-
-- the domain of a custom integration, as used in its documentation URL;
-- the title of a configuration entry, as shown under [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/),
-  which is handy when the same integration is set up more than once and only one of those entries should be excluded.
-
-Examples:
-
-- *ESPHome* - never auto-update any ESPHome device;
-- *HACS* - never auto-update anything installed through HACS;
-- `Living room lights` (typed in) - never auto-update the devices of that single configuration entry.
+Every update entity belonging to a picked entry is skipped, including entities added later on,
+so there is no need to keep the **Exclusions** list above in sync when new updates show up for it.
 
 Notes:
 
-- Typed entries are matched ignoring upper/lower case.
-- *Home Assistant Supervisor* covers Home Assistant Core, OS and Supervisor as well as every add-on.
-  To skip only Core/OS/Supervisor updates, use the **Update mode for Home Assistant core and OS updates** option instead.
-- Entries not matching any integration are silently ignored.
+- Integrations set up once (HACS, Home Assistant Supervisor, ...) cover everything they provide with a single entry.
+  *Home Assistant Supervisor* covers Home Assistant Core, OS and Supervisor as well as every add-on;
+  to skip only Core/OS/Supervisor updates, use the **Update mode for Home Assistant core and OS updates** option instead.
+- Integrations that add one entry per device or per service (ESPHome, Shelly, Matter, ...) need one entry picked per device.
+  Use the **Exclusions** list above when it is easier to select the update entities directly.
+- Update entities that do not belong to any configuration entry, such as the ones created from YAML, cannot be picked here.
+  Use the **Exclusions** list above for those.
 - Exclusions are also applied to the **Out of schedule entities**.
-      
+
 ### Pre-update actions <sup>*Optional</sup>
 Actions to execute before the backup or any update starts.
 You can use this to send notifications, turn on/off devices or activate scenes before starting the updates.
