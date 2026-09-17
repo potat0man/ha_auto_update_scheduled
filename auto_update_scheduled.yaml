@@ -23,7 +23,7 @@
 ####################################################################################################
 ---
 blueprint:
-  name: Home Assistant Auto-update on a schedule base v2026.7.0
+  name: Home Assistant Auto-update on a schedule base v2026.7.1
   author: Edward Firmo (https://github.com/edwardtfn)
   homeassistant:
     min_version: 2025.8.0
@@ -31,6 +31,11 @@ blueprint:
     # Home Assistant Auto-update
 
     Update Home Assistant automatically when a new update is available.
+
+    ## v2026.7.1
+
+    - **Excluded integrations** is now picked from a dropdown instead of being typed by hand.
+      Integrations not in the list, and configuration entry titles, can still be typed in.
 
     ## v2026.7.0
 
@@ -288,17 +293,16 @@ blueprint:
           description: |
             `Optional`
 
-            Type the name of one or more integrations whose updates should NOT be installed
-            automatically, pressing `Enter` after each name to add it to the list.
+            Pick one or more integrations whose updates should NOT be installed automatically.
 
-            Every update entity provided by a listed integration is skipped, including entities
+            Every update entity provided by a selected integration is skipped, including entities
             added later on, so there is no need to keep the "Exclusions" list above in sync when
             new devices or repositories show up.
 
-            Each entry is matched, ignoring upper/lower case, against:
+            The list offers every integration shipping with Home Assistant that can provide
+            updates, plus HACS. Anything else can still be typed in and added to the list:
 
-            - the integration domain, as used in its documentation URL
-              (`esphome`, `hacs`, `shelly`, `zwave_js`, `hassio`, ...);
+            - the domain of a custom integration, as used in its documentation URL;
 
             - the title of a configuration entry, as shown under
               [Settings > Devices & Services](https://my.home-assistant.io/redirect/integrations/),
@@ -307,17 +311,136 @@ blueprint:
 
             Notes:
 
-            - `hassio` covers Home Assistant Core, OS and Supervisor as well as every add-on.
-              To skip only Core/OS/Supervisor updates, use "Update mode for Home Assistant core
-              and OS updates" above instead.
+            - Typed entries are matched ignoring upper/lower case.
 
-            - Names not matching any integration are silently ignored.
+            - "Home Assistant Supervisor" covers Home Assistant Core, OS and Supervisor as well as
+              every add-on. To skip only Core/OS/Supervisor updates, use "Update mode for Home
+              Assistant core and OS updates" above instead.
+
+            - Entries not matching any integration are silently ignored.
 
             - Exclusions are also applied to the "Out of schedule entities" selected above.
           default: []
           selector:
-            text:
+            select:
               multiple: true
+              custom_value: true
+              mode: dropdown
+              options:
+                - label: "AdGuard Home"
+                  value: "adguard"
+                - label: "Advantage Air"
+                  value: "advantage_air"
+                - label: "AirGradient"
+                  value: "airgradient"
+                - label: "BleBox devices"
+                  value: "blebox"
+                - label: "devolo Home Network"
+                  value: "devolo_home_network"
+                - label: "ESPHome"
+                  value: "esphome"
+                - label: "EZVIZ"
+                  value: "ezviz"
+                - label: "FRITZ!Box Tools"
+                  value: "fritz"
+                - label: "HACS (Home Assistant Community Store)"
+                  value: "hacs"
+                - label: "Home Assistant Connect ZBT-1"
+                  value: "homeassistant_sky_connect"
+                - label: "Home Assistant Connect ZBT-2"
+                  value: "homeassistant_connect_zbt2"
+                - label: "Home Assistant Hardware"
+                  value: "homeassistant_hardware"
+                - label: "Home Assistant Supervisor"
+                  value: "hassio"
+                - label: "Home Assistant Yellow"
+                  value: "homeassistant_yellow"
+                - label: "Immich"
+                  value: "immich"
+                - label: "IronOS"
+                  value: "iron_os"
+                - label: "La Marzocco"
+                  value: "lamarzocco"
+                - label: "LaMetric"
+                  value: "lametric"
+                - label: "Linn / OpenHome"
+                  value: "openhome"
+                - label: "Matter"
+                  value: "matter"
+                - label: "MikroTik"
+                  value: "mikrotik"
+                - label: "MQTT"
+                  value: "mqtt"
+                - label: "myUplink"
+                  value: "myuplink"
+                - label: "NETGEAR"
+                  value: "netgear"
+                - label: "Nextcloud"
+                  value: "nextcloud"
+                - label: "ntfy"
+                  value: "ntfy"
+                - label: "Paperless-ngx"
+                  value: "paperless_ngx"
+                - label: "Peblar"
+                  value: "peblar"
+                - label: "Pi-hole"
+                  value: "pi_hole"
+                - label: "Plex Media Server"
+                  value: "plex"
+                - label: "Portainer"
+                  value: "portainer"
+                - label: "QNAP QSW"
+                  value: "qnap_qsw"
+                - label: "RainMachine"
+                  value: "rainmachine"
+                - label: "Raspberry Pi"
+                  value: "raspberry_pi"
+                - label: "Reolink"
+                  value: "reolink"
+                - label: "Sensibo"
+                  value: "sensibo"
+                - label: "Shelly"
+                  value: "shelly"
+                - label: "SmartThings"
+                  value: "smartthings"
+                - label: "SMLIGHT SLZB"
+                  value: "smlight"
+                - label: "Squeezebox (Lyrion Music Server)"
+                  value: "squeezebox"
+                - label: "Swing2Sleep Smarla"
+                  value: "smarla"
+                - label: "Synology DSM"
+                  value: "synology_dsm"
+                - label: "System Bridge"
+                  value: "system_bridge"
+                - label: "Template"
+                  value: "template"
+                - label: "Tesla Fleet"
+                  value: "tesla_fleet"
+                - label: "Teslemetry"
+                  value: "teslemetry"
+                - label: "Tessie"
+                  value: "tessie"
+                - label: "TP-Link Omada"
+                  value: "tplink_omada"
+                - label: "Ubiquiti airOS"
+                  value: "airos"
+                - label: "UniFi Network"
+                  value: "unifi"
+                - label: "Uptime Kuma"
+                  value: "uptime_kuma"
+                - label: "VeSync"
+                  value: "vesync"
+                - label: "WattWächter Plus"
+                  value: "wattwaechter"
+                - label: "Whisker"
+                  value: "litterrobot"
+                - label: "WLED"
+                  value: "wled"
+                - label: "Z-Wave"
+                  value: "zwave_js"
+                - label: "Zigbee Home Automation"
+                  value: "zha"
 
         minimum_patch_version:
           name: Minimum patch version
